@@ -44,22 +44,44 @@ import {Switch} from '../switch'
 //   (newlines are ok, like in the above example)
 
 // 🐨 create a ToggleContext with React.createContext here
+const ToggleContext = React.createContext({
+  on: false,
+  toggle: () => {},
+})
 
 class Toggle extends React.Component {
   // 🐨 each of these compound components will need to be changed to use
   // ToggleContext.Consumer and rather than getting `on` and `toggle`
   // from props, it'll get it from the ToggleContext.Consumer value.
-  static On = ({on, children}) => (on ? children : null)
-  static Off = ({on, children}) => (on ? null : children)
-  static Button = ({on, toggle, ...props}) => (
-    <Switch on={on} onClick={toggle} {...props} />
+  static On = ({children}) => (
+    <ToggleContext.Consumer>
+      {contextValue => (contextValue.on ? children : null)}
+    </ToggleContext.Consumer>
   )
-  state = {on: false}
+  static Off = ({children}) => (
+    <ToggleContext.Consumer>
+      {contextValue => (!contextValue.on ? children : null)}
+    </ToggleContext.Consumer>
+  )
+  static Button = props => (
+    <ToggleContext.Consumer>
+      {contextValue => (
+        <Switch
+          on={contextValue.on}
+          onClick={contextValue.toggle}
+          {...props}
+        />
+      )}
+    </ToggleContext.Consumer>
+  )
   toggle = () =>
     this.setState(
       ({on}) => ({on: !on}),
       () => this.props.onToggle(this.state.on),
     )
+
+  state = {on: false, toggle: this.toggle}
+
   render() {
     // Because this.props.children is _immediate_ children only, we need
     // to 🐨 remove this map function and render our context provider with
@@ -67,11 +89,10 @@ class Toggle extends React.Component {
     // expose the `on` state and `toggle` method as properties in the context
     // value (the value prop).
 
-    return React.Children.map(this.props.children, child =>
-      React.cloneElement(child, {
-        on: this.state.on,
-        toggle: this.toggle,
-      }),
+    return (
+      <ToggleContext.Provider value={this.state}>
+        {this.props.children}
+      </ToggleContext.Provider>
     )
   }
 }
