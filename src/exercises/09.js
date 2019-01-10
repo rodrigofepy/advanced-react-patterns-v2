@@ -12,6 +12,12 @@ class Toggle extends React.Component {
     onReset: () => {},
     stateReducer: (state, changes) => changes,
   }
+
+  static stateReducerTypes = {
+    toggle: '__toggle__',
+    reset: '__reset__',
+  }
+
   initialState = {on: this.props.initialOn}
   state = this.initialState
   internalSetState(changes, callback) {
@@ -20,7 +26,7 @@ class Toggle extends React.Component {
       const changesObject =
         typeof changes === 'function' ? changes(state) : changes
       // apply state reducer
-      const reducedChanges =
+      const {type, ...reducedChanges} =
         this.props.stateReducer(state, changesObject) || {}
       // 🐨  in addition to what we've done, let's pluck off the `type`
       // property and return an object only if the state changes
@@ -33,20 +39,21 @@ class Toggle extends React.Component {
   }
   reset = () =>
     // 🐨 add a `type` string property to this call
-    this.internalSetState(this.initialState, () =>
-      this.props.onReset(this.state.on),
+    this.internalSetState(
+      {...this.initialState, type: Toggle.stateReducerTypes.reset},
+      () => this.props.onReset(this.state.on),
     )
   // 🐨 accept a `type` property here and give it a default value
-  toggle = () =>
+  toggle = ({type = Toggle.stateReducerTypes.toggle} = {}) =>
     this.internalSetState(
       // pass the `type` string to this object
-      ({on}) => ({on: !on}),
+      ({on}) => ({on: !on, type}),
       () => this.props.onToggle(this.state.on),
     )
   getTogglerProps = ({onClick, ...props} = {}) => ({
     // 🐨 change `this.toggle` to `() => this.toggle()`
     // to avoid passing the click event to this.toggle.
-    onClick: callAll(onClick, this.toggle),
+    onClick: callAll(onClick, () => this.toggle()),
     'aria-pressed': this.state.on,
     ...props,
   })
