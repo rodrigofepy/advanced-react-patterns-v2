@@ -1,7 +1,7 @@
 // The provider pattern
 import React, {Fragment} from 'react'
 // 🐨 you're going to need this :)
-// import hoistNonReactStatics from 'hoist-non-react-statics'
+import hoistNonReactStatics from 'hoist-non-react-statics'
 import {Switch} from '../switch'
 
 const ToggleContext = React.createContext()
@@ -22,7 +22,6 @@ class Toggle extends React.Component {
 }
 
 function withToggle(Component) {
-  return Component
   // The `withToggle` function is called a "Higher Order Component"
   // It's another way to share code and allows you to statically
   // create new components to render.
@@ -47,6 +46,20 @@ function withToggle(Component) {
   //    by calling it with the Wrapper and the Component to forward all the
   //    static properties from the Component to the Wrapper
   //    💰 `return hoistReactStatics(React.forwardRef(Wrapper), Component)`
+  function Wrapper(props, ref) {
+    return (
+      <Toggle.Consumer>
+        {toggleContext => (
+          <Component {...props} toggle={toggleContext} ref={ref} />
+        )}
+      </Toggle.Consumer>
+    )
+  }
+
+  Wrapper.displayName = `withToggle(${Component.displayName ||
+    Component.name})`
+
+  return hoistNonReactStatics(React.forwardRef(Wrapper), Component)
 }
 
 // Don't make changes to the Usage component. It's here to show you how your
